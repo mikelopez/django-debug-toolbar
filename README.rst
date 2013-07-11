@@ -29,7 +29,7 @@ There is also one Django management command currently:
 
 If you have ideas for other panels please let us know.
 
-* Note: The Debug Toolbar only works on Django 1.2 and newer.
+* Note: The Debug Toolbar only works on Django 1.3 and newer.
 
 Installation
 ============
@@ -229,6 +229,12 @@ adding proper coverage (especially if it has a chance for a regression) in the t
 A list of 3rd party panels can be found on the Django Debug Toolbar Github wiki:
 https://github.com/django-debug-toolbar/django-debug-toolbar/wiki/3rd-Party-Panels
 
-TODOs and BUGS
-==============
-See: https://github.com/django-debug-toolbar/django-debug-toolbar/issues
+Resources
+=========
+
+* `Bug Tracker <http://github.com/django-debug-toolbar/django-debug-toolbar/issues>`_
+* `Code <http://github.com/django-debug-toolbar/django-debug-toolbar>`_
+* `Transifex <https://www.transifex.net/projects/p/django-debug-toolbar/>`_ (Help Translate!)
+
+The `in-development version <http://github.com/django-debug-toolbar/django-debug-toolbar/tarball/master#egg=django-debug-toolbar-dev>`_
+of the Debug Toolbar can be installed with ``pip install django-debug-toolbar==dev`` or ``easy_install django-debug-toolbar==dev``.

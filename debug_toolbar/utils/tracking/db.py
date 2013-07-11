@@ -91,8 +91,13 @@ class NormalCursorWrapper(object):
                             for key, value in params.iteritems())
         return map(self._quote_expr, params)
 
+    def _decode(self, param):
+        try:
+            return force_unicode(param, strings_only=True)
+        except UnicodeDecodeError:
+            return '(encoded string)'
+
     def execute(self, sql, params=()):
-        __traceback_hide__ = True
         start = datetime.now()
         try:
             return self.cursor.execute(sql, params)
@@ -107,10 +112,8 @@ class NormalCursorWrapper(object):
                 stacktrace = []
             _params = ''
             try:
-                _params = json.dumps(
-                        [force_unicode(x, strings_only=True) for x in params]
-                            )
-            except TypeError:
+                _params = json.dumps(map(self._decode, params))
+            except Exception:
                 pass  # object not JSON serializable
 
             template_info = None
@@ -128,7 +131,7 @@ class NormalCursorWrapper(object):
             del cur_frame
 
             alias = getattr(self.db, 'alias', 'default')
-            conn = connections[alias].connection
+            conn = self.db.connection
             # HACK: avoid imports
             if conn:
                 engine = conn.__class__.__module__.split('.', 1)[0]
@@ -138,14 +141,11 @@ class NormalCursorWrapper(object):
             params = {
                 'engine': engine,
                 'alias': alias,
-                'sql': self.db.ops.last_executed_query(self.cursor, sql,
-                                                self._quote_params(params)),
+                'sql': self.db.ops.last_executed_query(
+                    self.cursor, sql, self._quote_params(params)),
                 'duration': duration,
                 'raw_sql': sql,
                 'params': _params,
-                'hash': sha1(settings.SECRET_KEY \
-                                        + smart_str(sql) \
-                                        + _params).hexdigest(),
                 'stacktrace': stacktrace,
                 'start_time': start,
                 'stop_time': stop,
@@ -155,11 +155,17 @@ class NormalCursorWrapper(object):
             }
 
             if engine == 'psycopg2':
-                from psycopg2.extensions import TRANSACTION_STATUS_INERROR
+                # If an erroneous query was ran on the connection, it might
+                # be in a state where checking isolation_level raises an
+                # exception.
+                try:
+                    iso_level = conn.isolation_level
+                except conn.InternalError:
+                    iso_level = 'unknown'
                 params.update({
                     'trans_id': self.logger.get_transaction_id(alias),
                     'trans_status': conn.get_transaction_status(),
-                    'iso_level': conn.isolation_level if not conn.get_transaction_status() == TRANSACTION_STATUS_INERROR else "",
+                    'iso_level': iso_level,
                     'encoding': conn.encoding,
                 })
 
